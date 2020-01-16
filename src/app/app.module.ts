@@ -1,16 +1,25 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireDatabaseModule } from '@angular/fire/database';
+
 import { AppComponent } from './app.component';
+import { environment } from '../environments/environment';
+import { TransactionsListComponent } from './transactions-list/transactions-list.component';
+import { AngularFirestore } from '@angular/fire/firestore';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    TransactionsListComponent
   ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    AngularFireModule.initializeApp(environment.firebase, 'fcc-book-trading'),
+    AngularFireDatabaseModule
   ],
-  providers: [],
+  providers: [AngularFirestore],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
