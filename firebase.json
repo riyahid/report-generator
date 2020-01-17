@@ -8,7 +8,7 @@
   },
   "hosting": {
     "site": "report-generator-2020",
-    "public": "app",
+    "public": "dist/report-generator",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -16,7 +16,7 @@
     ],
     "rewrites": [{
       "source": "**",
-      "destination": "/index.html"
+      "destination": "src/index.html"
     }]
   }
 }

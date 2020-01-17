@@ -1,0 +1,31 @@
+<div>
+  <form [formGroup]="addForm" (submit)="onSubmit(addForm.value)">
+    <div>
+      <mat-form-field>
+        <input matInput type="number" placeholder="HSN" formControlName="hsn" />
+      </mat-form-field>
+    </div>
+    <div>
+      <div
+        formArrayName="assets"
+        *ngFor="let item of addForm.get('assets').controls; let i = index"
+      >
+        <div [formGroupName]="i">
+          <mat-form-field>
+            <input matInput type="number" placeholder="Pairs" formControlName="pairs" />
+          </mat-form-field>
+          <mat-form-field>
+            <input matInput type="number" placeholder="Rate" formControlName="rate" />
+          </mat-form-field>
+          <mat-form-field>
+            <input matInput placeholder="Total" readonly formControlName="total" />
+          </mat-form-field>
+          <button (click)="addAsset()">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+</div>

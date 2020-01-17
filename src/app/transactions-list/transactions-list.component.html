@@ -1,1 +1,34 @@
-<p>{{transactions | json }}</p>
+<div class="export-container">
+  <button mat-raised-button color="primary" (click)="exportTable()">Export</button>
+  <button mat-raised-button color="primary" (click)="addTransaction()">Add</button>
+</div>
+<div>
+  <table id="ExampleTable" mat-table [dataSource]="transactions" matSort class="mat-elevation-z8">
+    <!-- Name Column -->
+    <ng-container matColumnDef="id">
+      <th mat-header-cell *matHeaderCellDef>Id</th>
+      <td mat-cell *matCellDef="let element">{{ element.id }}</td>
+      <td mat-footer-cell *matFooterCellDef>Total</td>
+    </ng-container>
+
+    <!-- Weight Column -->
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let element">{{ element.type }}</td>
+      <td mat-footer-cell *matFooterCellDef></td>
+    </ng-container>
+
+    <!-- Symbol Column -->
+    <ng-container matColumnDef="assets">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Assets</th>
+      <td mat-cell *matCellDef="let element">{{ element.assets | json }}</td>
+      <td mat-footer-cell *matFooterCellDef></td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    <tr mat-footer-row *matFooterRowDef="displayedColumns"></tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+</div>
