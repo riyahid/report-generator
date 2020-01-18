@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, Input } from '@angular/core';
 import { TransactionService } from '../services/transaction.service';
 import { Transaction } from '../model/transaction.model';
 import * as _ from 'lodash';
@@ -14,6 +14,8 @@ export class TransactionsListComponent implements OnInit {
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
   @ViewChild(MatSort, { static: true }) sort: MatSort;
 
+  @Input() sale: any;
+
   constructor(private transactionService: TransactionService, private dialog: MatDialog) {}
 
   transactions: Transaction[] = [];
@@ -27,6 +29,7 @@ export class TransactionsListComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.sale = this.sale === 'true' ? true : false;
     this.transactionService.getTransactions().subscribe(data => {
       this.transactions = data.map(e => {
         return {
@@ -34,6 +37,11 @@ export class TransactionsListComponent implements OnInit {
           ...(e.payload.doc.data() as any)
         } as Transaction;
       });
+      if (this.sale) {
+        this.transactions = this.transactions.filter(element => element.type === 'Sale');
+      } else {
+        this.transactions = this.transactions.filter(element => element.type === 'Purchase');
+      }
       this.dataSource = new MatTableDataSource<Transaction>(this.transactions);
       this.dataSource.sort = this.sort;
     });
@@ -45,7 +53,7 @@ export class TransactionsListComponent implements OnInit {
 
   addTransaction() {
     this.dialog
-      .open(AddTransactionComponent, {})
+      .open(AddTransactionComponent, { data: this.sale })
       .afterClosed()
       .subscribe(data => {
         if (data) {

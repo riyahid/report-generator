@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { TransactionService } from '../services/transaction.service';
 import { FormGroup, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { Asset, Transaction } from '../model/transaction.model';
 import * as _ from 'lodash';
 
@@ -12,7 +12,7 @@ import * as _ from 'lodash';
 })
 export class AddTransactionComponent implements OnInit {
   constructor(
-    private service: TransactionService,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<AddTransactionComponent>
   ) {}
@@ -33,20 +33,11 @@ export class AddTransactionComponent implements OnInit {
       amount: 0,
       date: new Date(),
       isIgst: false,
-      isSale: true
+      type: Boolean(this.data) ? 'Sale' : 'Purchase'
     });
 
     this.addForm.get('assets').valueChanges.subscribe((value: Asset[]) => {
       this.updateTotals(value.map(element => element.pairs * element.rate));
-    });
-
-    this.addForm.get('isSale').valueChanges.subscribe(value => {
-      const typeControl = this.addForm.get('type');
-      if (value) {
-        typeControl.setValue('Sale');
-      } else {
-        typeControl.setValue('Puchase');
-      }
     });
 
     this.addForm.get('isIgst').valueChanges.subscribe(() => {
@@ -88,7 +79,7 @@ export class AddTransactionComponent implements OnInit {
   }
 
   onSubmit(formValue: any) {
-    formValue = _.omit(formValue, ['isIgst', 'isSale']);
+    formValue = _.omit(formValue, 'isIgst');
     this.dialogRef.close({ ...formValue });
   }
 

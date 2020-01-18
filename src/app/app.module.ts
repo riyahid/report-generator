@@ -16,7 +16,8 @@ import {
   MatSortModule,
   MatTableModule,
   MatNativeDateModule,
-  MAT_DATE_LOCALE
+  MAT_DATE_LOCALE,
+  MatTabsModule
 } from '@angular/material';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { BrowserModule } from '@angular/platform-browser';
@@ -27,9 +28,16 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import { TransactionsListComponent } from './transactions-list/transactions-list.component';
+import { TabMenuComponent } from './tab-menu/tab-menu.component';
 
 @NgModule({
-  declarations: [AppComponent, TransactionsListComponent, LoginComponent, AddTransactionComponent],
+  declarations: [
+    AppComponent,
+    TransactionsListComponent,
+    LoginComponent,
+    AddTransactionComponent,
+    TabMenuComponent
+  ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
@@ -51,7 +59,8 @@ import { TransactionsListComponent } from './transactions-list/transactions-list
     MatFormFieldModule,
     MatCheckboxModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatTabsModule
   ],
   providers: [AngularFirestore, { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
   bootstrap: [AppComponent],

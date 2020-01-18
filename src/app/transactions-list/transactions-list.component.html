@@ -1,6 +1,13 @@
 <div class="export-container">
-  <button mat-raised-button color="primary" (click)="exportTable()">Export</button>
-  <button mat-raised-button color="primary" (click)="addTransaction()">Add</button>
+  <button mat-raised-button color="primary" class="trans-button" (click)="exportTable()">
+    Export
+  </button>
+  <button mat-raised-button color="primary" class="trans-button" (click)="addTransaction()">
+    Add
+  </button>
+  <button mat-raised-button color="primary" class="trans-button" (click)="print()">
+    Print
+  </button>
 </div>
 <div>
   <table id="ExampleTable" mat-table [dataSource]="transactions" matSort class="mat-elevation-z8">
