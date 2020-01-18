@@ -31,12 +31,22 @@ export class AddTransactionComponent implements OnInit {
       igst: 0,
       grandTotal: 0,
       amount: 0,
-      date: Date.now(),
-      isIgst: false
+      date: new Date(),
+      isIgst: false,
+      isSale: true
     });
 
     this.addForm.get('assets').valueChanges.subscribe((value: Asset[]) => {
       this.updateTotals(value.map(element => element.pairs * element.rate));
+    });
+
+    this.addForm.get('isSale').valueChanges.subscribe(value => {
+      const typeControl = this.addForm.get('type');
+      if (value) {
+        typeControl.setValue('Sale');
+      } else {
+        typeControl.setValue('Puchase');
+      }
     });
 
     this.addForm.get('isIgst').valueChanges.subscribe(() => {
@@ -77,7 +87,8 @@ export class AddTransactionComponent implements OnInit {
     this.assets.removeAt(index);
   }
 
-  onSubmit(formValue: Transaction) {
+  onSubmit(formValue: any) {
+    formValue = _.omit(formValue, ['isIgst', 'isSale']);
     this.dialogRef.close({ ...formValue });
   }
 

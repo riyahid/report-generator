@@ -14,8 +14,11 @@ import {
   MatPaginatorModule,
   MatProgressSpinnerModule,
   MatSortModule,
-  MatTableModule
+  MatTableModule,
+  MatNativeDateModule,
+  MAT_DATE_LOCALE
 } from '@angular/material';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { environment } from '../environments/environment';
@@ -46,9 +49,11 @@ import { TransactionsListComponent } from './transactions-list/transactions-list
     MatDialogModule,
     MatIconModule,
     MatFormFieldModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
-  providers: [AngularFirestore],
+  providers: [AngularFirestore, { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
   bootstrap: [AppComponent],
   entryComponents: [AddTransactionComponent]
 })
