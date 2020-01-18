@@ -1,31 +1,46 @@
 <div>
-  <form [formGroup]="addForm" (submit)="onSubmit(addForm.value)">
-    <div>
-      <mat-form-field>
-        <input matInput type="number" placeholder="HSN" formControlName="hsn" />
-      </mat-form-field>
-    </div>
-    <div>
-      <div
-        formArrayName="assets"
-        *ngFor="let item of addForm.get('assets').controls; let i = index"
-      >
-        <div [formGroupName]="i">
-          <mat-form-field>
-            <input matInput type="number" placeholder="Pairs" formControlName="pairs" />
-          </mat-form-field>
-          <mat-form-field>
-            <input matInput type="number" placeholder="Rate" formControlName="rate" />
-          </mat-form-field>
-          <mat-form-field>
-            <input matInput placeholder="Total" readonly formControlName="total" />
-          </mat-form-field>
-          <button (click)="addAsset()">
-            <mat-icon>add</mat-icon>
-          </button>
-        </div>
+  <form [formGroup]="addForm" class="formClass">
+    <mat-form-field>
+      <input matInput type="number" placeholder="Invoive No." formControlName="invno" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput type="date" placeholder="Date" formControlName="date" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput type="number" placeholder="HSN" formControlName="hsn" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="Particulars" formControlName="particulars" />
+    </mat-form-field>
+    <div formArrayName="assets" *ngFor="let item of addForm.get('assets').controls; let i = index">
+      <div [formGroupName]="i">
+        <mat-form-field>
+          <input matInput type="number" placeholder="Pairs" formControlName="pairs" />
+        </mat-form-field>
+        <mat-form-field>
+          <input matInput type="number" placeholder="Rate" formControlName="rate" />
+        </mat-form-field>
+        <button *ngIf="i === 0" mat-flat-button color="primary" (click)="addAsset()">Add</button>
       </div>
     </div>
-    <button type="submit">Submit</button>
+    <mat-form-field>
+      <input matInput placeholder="Amount" readonly formControlName="amount" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="CGST" readonly formControlName="cgst" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="SGST" readonly formControlName="sgst" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="IGST" readonly formControlName="igst" />
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="Grand Total" readonly formControlName="grandTotal" />
+    </mat-form-field>
+    <div class="export-container">
+      <button mat-raised-button color="primary" (click)="onSubmit(addForm.value)">Submit</button>
+      <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
+    </div>
   </form>
 </div>

@@ -48,7 +48,9 @@ export class TransactionsListComponent implements OnInit {
       .open(AddTransactionComponent, {})
       .afterClosed()
       .subscribe(data => {
-        this.transactionService.addTransactions(data);
+        if (data) {
+          this.transactionService.addTransactions(data);
+        }
       });
   }
 }
