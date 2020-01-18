@@ -1,4 +1,11 @@
 .formClass {
-  display: grid;
-  font-size: small;
+  display: block;
+}
+
+.mat-form-field {
+  margin-right: 25px;
+}
+
+.export-container {
+  text-align: right;
 }

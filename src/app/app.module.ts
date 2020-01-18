@@ -1,31 +1,29 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireDatabaseModule } from '@angular/fire/database';
-
-import { AppComponent } from './app.component';
-import { environment } from '../environments/environment';
-import { TransactionsListComponent } from './transactions-list/transactions-list.component';
 import { AngularFirestore, AngularFirestoreModule } from '@angular/fire/firestore';
-import { LoginComponent } from './login/login.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { AppRoutingModule } from './app-routing.module';
 import {
-  MatCardModule,
-  MatInputModule,
   MatButtonModule,
-  MatProgressSpinnerModule,
-  MatTableModule,
-  MatPaginatorModule,
-  MatSortModule,
+  MatCardModule,
+  MatCheckboxModule,
   MatDialogModule,
+  MatFormFieldModule,
   MatIconModule,
-  MatFormFieldModule
+  MatInputModule,
+  MatPaginatorModule,
+  MatProgressSpinnerModule,
+  MatSortModule,
+  MatTableModule
 } from '@angular/material';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { environment } from '../environments/environment';
 import { AddTransactionComponent } from './add-transaction/add-transaction.component';
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { LoginComponent } from './login/login.component';
+import { TransactionsListComponent } from './transactions-list/transactions-list.component';
 
 @NgModule({
   declarations: [AppComponent, TransactionsListComponent, LoginComponent, AddTransactionComponent],
@@ -47,7 +45,8 @@ import { AddTransactionComponent } from './add-transaction/add-transaction.compo
     MatSortModule,
     MatDialogModule,
     MatIconModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatCheckboxModule
   ],
   providers: [AngularFirestore],
   bootstrap: [AppComponent],

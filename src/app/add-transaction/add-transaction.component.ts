@@ -19,7 +19,6 @@ export class AddTransactionComponent implements OnInit {
 
   addForm: FormGroup;
   assets: FormArray;
-  isIgst: boolean;
 
   ngOnInit() {
     this.addForm = this.fb.group({
@@ -32,11 +31,17 @@ export class AddTransactionComponent implements OnInit {
       igst: 0,
       grandTotal: 0,
       amount: 0,
-      date: new Date()
+      date: Date.now(),
+      isIgst: false
     });
 
     this.addForm.get('assets').valueChanges.subscribe((value: Asset[]) => {
       this.updateTotals(value.map(element => element.pairs * element.rate));
+    });
+
+    this.addForm.get('isIgst').valueChanges.subscribe(() => {
+      const assets: Asset[] = this.addForm.get('assets').value;
+      this.updateTotals(assets.map(element => element.pairs * element.rate));
     });
   }
 
@@ -45,11 +50,14 @@ export class AddTransactionComponent implements OnInit {
     const tax: number = total * 0.05;
     this.addForm.get('amount').setValue(total);
     this.addForm.get('grandTotal').setValue(total + tax);
-    if (this.isIgst) {
+    if (this.addForm.get('isIgst').value === true) {
       this.addForm.get('igst').setValue(tax);
+      this.addForm.get('cgst').setValue(0);
+      this.addForm.get('sgst').setValue(0);
     } else {
       this.addForm.get('cgst').setValue(tax / 2);
       this.addForm.get('sgst').setValue(tax / 2);
+      this.addForm.get('igst').setValue(0);
     }
   }
 
@@ -63,6 +71,10 @@ export class AddTransactionComponent implements OnInit {
   addAsset(): void {
     this.assets = this.addForm.get('assets') as FormArray;
     this.assets.push(this.createAsset());
+  }
+
+  removeAsset(index: number) {
+    this.assets.removeAt(index);
   }
 
   onSubmit(formValue: Transaction) {
