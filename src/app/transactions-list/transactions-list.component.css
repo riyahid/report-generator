@@ -14,3 +14,7 @@ tr.mat-footer-row {
   height: 40px;
   font-size: larger;
 }
+
+.td .custom {
+  rowspan: 2;
+}

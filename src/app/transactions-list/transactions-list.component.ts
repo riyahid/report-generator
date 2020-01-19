@@ -1,4 +1,12 @@
-import { Component, ElementRef, Input, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Input,
+  OnInit,
+  ViewChild,
+  AfterViewInit,
+  ChangeDetectorRef
+} from '@angular/core';
 import { MatDialog, MatTableDataSource } from '@angular/material';
 import html2canvas from 'html2canvas';
 import * as jspdf from 'jspdf';
@@ -20,7 +28,11 @@ export class TransactionsListComponent implements OnInit, AfterViewInit {
   cols: any[];
   span = 'jj';
 
-  constructor(private transactionService: TransactionService, private dialog: MatDialog) {}
+  constructor(
+    private transactionService: TransactionService,
+    private dialog: MatDialog,
+    private cd: ChangeDetectorRef
+  ) {}
 
   transactions: Transaction[] = [];
   dataSource = new MatTableDataSource<Transaction>([]);
@@ -47,6 +59,10 @@ export class TransactionsListComponent implements OnInit, AfterViewInit {
         this.transactions = this.transactions.filter(element => element.type === 'Purchase');
       }
     });
+    const items: NodeListOf<HTMLElement> = document.getElementsByName('custom');
+    items.forEach((item: any) => (item.rowspan = 2));
+    this.cd.detectChanges();
+
     this.cols = [
       { field: 'invno', header: 'Inv No.', footer: 'Total' },
       { field: 'date', header: 'Date' },

@@ -18,25 +18,41 @@
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-rowData let-columns="columns">
-    <tr *ngFor="let asset of rowData.assets; let i = index" [ngSwitch]="i">
-      <ng-template [ngSwitchCase]="0">
-        <td [class]="rowData.invno">{{ rowData.invno }}</td>
-        <td [class]="rowData.invno">{{ rowData.date }}</td>
-        <td [class]="rowData.invno">{{ rowData.hsn }}</td>
-        <td [class]="rowData.invno">{{ rowData.particulars }}</td>
-        <td>{{ rowData.assets[i].pairs }}</td>
-        <td>{{ rowData.assets[i].rate }}</td>
-        <td [class]="rowData.invno">{{ rowData.amount }}</td>
-        <td [class]="rowData.invno">{{ rowData.cgst }}</td>
-        <td [class]="rowData.invno">{{ rowData.sgst }}</td>
-        <td [class]="rowData.invno">{{ rowData.igst }}</td>
-        <td [class]="rowData.invno">{{ rowData.grandTotal }}</td>
-      </ng-template>
-      <ng-template [ngSwitchDefault]>
-        <td>{{ rowData.assets[i].pairs }}</td>
-        <td>{{ rowData.assets[i].rate }}</td>
-      </ng-template>
+    <tr *ngFor="let asset of rowData.assets; let i = index">
+      <ng-container
+        *ngTemplateOutlet="
+          i === 0 ? normal : spanrow;
+          context: {
+            rowData: rowData,
+            columns: columns,
+            asset: asset
+          }
+        "
+      ></ng-container>
     </tr>
+  </ng-template>
+  <ng-template #normal let-rowData="rowData" let-columns="columns" let-asset="asset" let-item>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.invno }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.date }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.hsn }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.particulars }}</td>
+    <td>{{ asset.pairs }}</td>
+    <td>{{ asset.rate }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.amount }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.cgst }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.sgst }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.igst }}</td>
+    <td [attr.rowspan]="rowData.assets.length">{{ rowData.grandTotal }}</td>
+  </ng-template>
+  <ng-template #spanrow let-rowData="rowData" let-columns="columns" let-asset="asset" let-item>
+    <td>{{ asset.pairs }}</td>
+    <td>{{ asset.rate }}</td>
+  </ng-template>
+  <ng-template #assetcol let-data="data" let-item>
+    <td>{{ data }}</td>
+  </ng-template>
+  <ng-template #normalCol let-data="data" let-span="span" let-item>
+    <td [attr.rowspan]="span">{{ data }}</td>
   </ng-template>
   <ng-template pTemplate="footer" let-columns>
     <tr class="footer-row columns">
