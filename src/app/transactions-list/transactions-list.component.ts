@@ -1,22 +1,13 @@
-import {
-  Component,
-  ElementRef,
-  Input,
-  OnInit,
-  ViewChild,
-  AfterViewInit,
-  ChangeDetectorRef
-} from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder } from '@angular/forms';
 import { MatDialog, MatTableDataSource } from '@angular/material';
 import html2canvas from 'html2canvas';
 import * as jspdf from 'jspdf';
 import * as _ from 'lodash';
 import { AddTransactionComponent } from '../add-transaction/add-transaction.component';
-import { CarsComponent } from '../cars/cars.component';
+import { allYears, line3, month } from '../model/header';
 import { Transaction } from '../model/transaction.model';
 import { TransactionService } from '../services/transaction.service';
-import { month, allYears, line3 } from '../model/header';
-import { FormControl, FormBuilder, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-transactions-list',
@@ -121,10 +112,6 @@ export class TransactionsListComponent implements OnInit {
 
   getTotalOfField(field: string) {
     return _.sum(_.map(this.filtered, field));
-  }
-
-  print() {
-    this.dialog.open(CarsComponent, { data: [...this.transactions] });
   }
 
   exportExcel() {

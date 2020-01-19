@@ -30,7 +30,6 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import { TransactionsListComponent } from './transactions-list/transactions-list.component';
 import { TabMenuComponent } from './tab-menu/tab-menu.component';
-import { CarsComponent } from './cars/cars.component';
 import { TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 
@@ -40,8 +39,7 @@ import { CommonModule } from '@angular/common';
     TransactionsListComponent,
     LoginComponent,
     AddTransactionComponent,
-    TabMenuComponent,
-    CarsComponent
+    TabMenuComponent
   ],
   imports: [
     BrowserModule,
@@ -73,6 +71,6 @@ import { CommonModule } from '@angular/common';
   providers: [AngularFirestore, { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
   bootstrap: [AppComponent],
   schemas: [NO_ERRORS_SCHEMA],
-  entryComponents: [AddTransactionComponent, CarsComponent]
+  entryComponents: [AddTransactionComponent]
 })
 export class AppModule {}
