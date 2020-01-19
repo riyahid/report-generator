@@ -57,6 +57,7 @@ export class TransactionsListComponent implements OnInit {
           ...(e.payload.doc.data() as any)
         } as Transaction;
       });
+      this.transactions = _.sortBy(this.transactions, 'invno');
       if (this.sale) {
         this.filtered = this.transactions.filter(element => element.type === 'Sale');
       } else {
