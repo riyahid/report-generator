@@ -48,7 +48,7 @@ export class AddTransactionComponent implements OnInit {
 
   updateTotals(assets: number[] = []) {
     const total: number = _.sum(assets);
-    const tax: number = total * 0.05;
+    const tax: number = this.getPrecisionedNumber(total * 0.05);
     this.addForm.get('amount').setValue(total);
     this.addForm.get('grandTotal').setValue(total + tax);
     if (this.addForm.get('isIgst').value === true) {
@@ -60,6 +60,10 @@ export class AddTransactionComponent implements OnInit {
       this.addForm.get('sgst').setValue(tax / 2);
       this.addForm.get('igst').setValue(0);
     }
+  }
+
+  getPrecisionedNumber(value: number): number {
+    return Number(value.toPrecision(3));
   }
 
   createAsset(): any {

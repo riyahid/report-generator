@@ -7,6 +7,7 @@ tr.mat-footer-row {
 
 .columns {
   text-align: center;
+  background-color: white !important;
 }
 
 .footer-row {
@@ -15,6 +16,17 @@ tr.mat-footer-row {
   font-size: larger;
 }
 
-.td .custom {
-  rowspan: 2;
+.trans-button {
+  margin-right: 10px;
+  margin-top: 5px;
+}
+
+.export-container {
+  text-align: center;
+}
+
+.options {
+  font-size: small;
+  text-align: center;
+  margin-top: 10px;
 }

@@ -17,7 +17,8 @@ import {
   MatTableModule,
   MatNativeDateModule,
   MAT_DATE_LOCALE,
-  MatTabsModule
+  MatTabsModule,
+  MatSelectModule
 } from '@angular/material';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { BrowserModule } from '@angular/platform-browser';
@@ -66,7 +67,8 @@ import { CommonModule } from '@angular/common';
     MatNativeDateModule,
     MatTabsModule,
     TableModule,
-    CommonModule
+    CommonModule,
+    MatSelectModule
   ],
   providers: [AngularFirestore, { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
   bootstrap: [AppComponent],
