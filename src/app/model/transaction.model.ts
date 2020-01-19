@@ -4,7 +4,7 @@ export class Transaction {
   amount: number;
   id?: string;
   hsn: number;
-  assets: Asset;
+  assets: Asset[];
   date: Date;
   particulars: string;
   cgst: number;

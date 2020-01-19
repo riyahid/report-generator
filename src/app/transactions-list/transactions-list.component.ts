@@ -1,20 +1,24 @@
-import { Component, OnInit, ViewChild, Input } from '@angular/core';
-import { TransactionService } from '../services/transaction.service';
-import { Transaction } from '../model/transaction.model';
+import { Component, ElementRef, Input, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { MatDialog, MatTableDataSource } from '@angular/material';
+import html2canvas from 'html2canvas';
+import * as jspdf from 'jspdf';
 import * as _ from 'lodash';
-import { MatPaginator, MatTableDataSource, MatSort, MatDialog } from '@angular/material';
 import { AddTransactionComponent } from '../add-transaction/add-transaction.component';
+import { CarsComponent } from '../cars/cars.component';
+import { Transaction } from '../model/transaction.model';
+import { TransactionService } from '../services/transaction.service';
 
 @Component({
   selector: 'app-transactions-list',
   templateUrl: './transactions-list.component.html',
   styleUrls: ['./transactions-list.component.css']
 })
-export class TransactionsListComponent implements OnInit {
-  @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
-  @ViewChild(MatSort, { static: true }) sort: MatSort;
+export class TransactionsListComponent implements OnInit, AfterViewInit {
+  @ViewChild('funds', { static: true }) table: ElementRef;
 
   @Input() sale: any;
+  cols: any[];
+  span = 'jj';
 
   constructor(private transactionService: TransactionService, private dialog: MatDialog) {}
 
@@ -42,13 +46,29 @@ export class TransactionsListComponent implements OnInit {
       } else {
         this.transactions = this.transactions.filter(element => element.type === 'Purchase');
       }
-      this.dataSource = new MatTableDataSource<Transaction>(this.transactions);
-      this.dataSource.sort = this.sort;
     });
+    this.cols = [
+      { field: 'invno', header: 'Inv No.', footer: 'Total' },
+      { field: 'date', header: 'Date' },
+      { field: 'hsn', header: 'HSN' },
+      { field: 'particulars', header: 'Particulars' },
+      { field: 'pairs', header: 'Pairs' },
+      { field: 'rate', header: 'Rate' },
+      { field: 'amount', header: 'Amount', footer: 'sum' },
+      { field: 'cgst', header: 'CGST', footer: 'sum' },
+      { field: 'sgst', header: 'SGST', footer: 'sum' },
+      { field: 'igst', header: 'IGST', footer: 'sum' },
+      { field: 'grandTotal', header: 'Grand Total', footer: 'sum' }
+    ];
+  }
+
+  ngAfterViewInit() {
+    Array.from(document.getElementsByClassName('2')).forEach((item: any) => (item.rowspan = 2));
+    console.log(document.getElementsByClassName('2'));
   }
 
   exportTable() {
-    this.transactionService.exportToExcel('ExampleTable');
+    this.transactionService.exportToExcel('funds');
   }
 
   addTransaction() {
@@ -60,5 +80,34 @@ export class TransactionsListComponent implements OnInit {
           this.transactionService.addTransactions(data);
         }
       });
+  }
+
+  getTotalOfField(field: string) {
+    return _.sum(_.map(this.transactions, field));
+  }
+
+  print() {
+    this.dialog.open(CarsComponent, { data: [...this.transactions] });
+  }
+
+  exportExcel() {
+    this.transactionService.exportToExcel('funds');
+  }
+  exportPdf() {
+    const data = document.getElementById('funds');
+    html2canvas(data).then(canvas => {
+      // Few necessary setting options
+      const imgWidth = 208;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const contentDataURL = canvas.toDataURL('image/png');
+      const pdf = new jspdf('p', 'mm', 'a4'); // A4 size page of PDF
+      const position = 0;
+      pdf.addImage(contentDataURL, 'JPEG', 0, position, imgWidth, imgHeight);
+      pdf.save('MYPdf.pdf'); // Generated PDF
+    });
+  }
+  getrow(rowdata): number {
+    return rowdata.assets.length;
   }
 }

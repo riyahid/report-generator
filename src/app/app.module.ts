@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireDatabaseModule } from '@angular/fire/database';
 import { AngularFirestore, AngularFirestoreModule } from '@angular/fire/firestore';
@@ -29,6 +29,9 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import { TransactionsListComponent } from './transactions-list/transactions-list.component';
 import { TabMenuComponent } from './tab-menu/tab-menu.component';
+import { CarsComponent } from './cars/cars.component';
+import { TableModule } from 'primeng/table';
+import { CommonModule } from '@angular/common';
 
 @NgModule({
   declarations: [
@@ -36,7 +39,8 @@ import { TabMenuComponent } from './tab-menu/tab-menu.component';
     TransactionsListComponent,
     LoginComponent,
     AddTransactionComponent,
-    TabMenuComponent
+    TabMenuComponent,
+    CarsComponent
   ],
   imports: [
     BrowserModule,
@@ -60,10 +64,13 @@ import { TabMenuComponent } from './tab-menu/tab-menu.component';
     MatCheckboxModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatTabsModule
+    MatTabsModule,
+    TableModule,
+    CommonModule
   ],
   providers: [AngularFirestore, { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }],
   bootstrap: [AppComponent],
-  entryComponents: [AddTransactionComponent]
+  schemas: [NO_ERRORS_SCHEMA],
+  entryComponents: [AddTransactionComponent, CarsComponent]
 })
 export class AppModule {}

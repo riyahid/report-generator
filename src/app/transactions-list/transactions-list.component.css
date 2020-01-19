@@ -4,3 +4,13 @@ table {
 tr.mat-footer-row {
   font-weight: bold;
 }
+
+.columns {
+  text-align: center;
+}
+
+.footer-row {
+  font-weight: 700;
+  height: 40px;
+  font-size: larger;
+}

@@ -1,41 +1,53 @@
 <div class="export-container">
-  <button mat-raised-button color="primary" class="trans-button" (click)="exportTable()">
+  <button mat-raised-button color="primary" class="trans-button" (click)="exportExcel()">
     Export
   </button>
   <button mat-raised-button color="primary" class="trans-button" (click)="addTransaction()">
     Add
   </button>
-  <button mat-raised-button color="primary" class="trans-button" (click)="print()">
+  <button mat-raised-button color="primary" class="trans-button" (click)="exportPdf()">
     Print
   </button>
 </div>
-<div>
-  <table id="ExampleTable" mat-table [dataSource]="transactions" matSort class="mat-elevation-z8">
-    <!-- Name Column -->
-    <ng-container matColumnDef="id">
-      <th mat-header-cell *matHeaderCellDef>Id</th>
-      <td mat-cell *matCellDef="let element">{{ element.id }}</td>
-      <td mat-footer-cell *matFooterCellDef>Total</td>
-    </ng-container>
-
-    <!-- Weight Column -->
-    <ng-container matColumnDef="type">
-      <th mat-header-cell *matHeaderCellDef>Type</th>
-      <td mat-cell *matCellDef="let element">{{ element.type }}</td>
-      <td mat-footer-cell *matFooterCellDef></td>
-    </ng-container>
-
-    <!-- Symbol Column -->
-    <ng-container matColumnDef="assets">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Assets</th>
-      <td mat-cell *matCellDef="let element">{{ element.assets | json }}</td>
-      <td mat-footer-cell *matFooterCellDef></td>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-    <tr mat-footer-row *matFooterRowDef="displayedColumns"></tr>
-  </table>
-
-  <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
-</div>
+<p-table id="funds" [columns]="cols" [value]="transactions" [paginator]="true" [rows]="10">
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns">
+        {{ col.header }}
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-rowData let-columns="columns">
+    <tr *ngFor="let asset of rowData.assets; let i = index" [ngSwitch]="i">
+      <ng-template [ngSwitchCase]="0">
+        <td [class]="rowData.invno">{{ rowData.invno }}</td>
+        <td [class]="rowData.invno">{{ rowData.date }}</td>
+        <td [class]="rowData.invno">{{ rowData.hsn }}</td>
+        <td [class]="rowData.invno">{{ rowData.particulars }}</td>
+        <td>{{ rowData.assets[i].pairs }}</td>
+        <td>{{ rowData.assets[i].rate }}</td>
+        <td [class]="rowData.invno">{{ rowData.amount }}</td>
+        <td [class]="rowData.invno">{{ rowData.cgst }}</td>
+        <td [class]="rowData.invno">{{ rowData.sgst }}</td>
+        <td [class]="rowData.invno">{{ rowData.igst }}</td>
+        <td [class]="rowData.invno">{{ rowData.grandTotal }}</td>
+      </ng-template>
+      <ng-template [ngSwitchDefault]>
+        <td>{{ rowData.assets[i].pairs }}</td>
+        <td>{{ rowData.assets[i].rate }}</td>
+      </ng-template>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="footer" let-columns>
+    <tr class="footer-row columns">
+      <td *ngFor="let col of columns" [ngSwitch]="col.footer">
+        <ng-template [ngSwitchCase]="'sum'">
+          <b>{{ getTotalOfField(col.field) }}</b>
+        </ng-template>
+        <ng-template [ngSwitchDefault]>
+          <b>{{ col.footer }}</b>
+        </ng-template>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

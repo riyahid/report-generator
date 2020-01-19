@@ -80,6 +80,7 @@ export class AddTransactionComponent implements OnInit {
 
   onSubmit(formValue: any) {
     formValue = _.omit(formValue, 'isIgst');
+    formValue.date = (formValue.date as Date).toLocaleDateString();
     this.dialogRef.close({ ...formValue });
   }
 

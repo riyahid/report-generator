@@ -22,7 +22,10 @@ export class TransactionService {
     const prefix = name || 'Report';
     const fileName = `${prefix}-${timeSpan}`;
     const targetTableElm = document.getElementById(tableId);
-    const wb = XLSX.utils.table_to_book(targetTableElm, { sheet: prefix } as XLSX.Table2SheetOpts);
+    const wb = XLSX.utils.table_to_book(targetTableElm, {
+      sheet: prefix,
+      raw: true
+    } as XLSX.Table2SheetOpts);
     XLSX.writeFile(wb, `${fileName}.xlsx`);
   }
 }
