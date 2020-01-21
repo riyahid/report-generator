@@ -1,0 +1,881 @@
+import { Component, Input, OnInit, AfterViewInit, OnDestroy}    from '@angular/core';
+import {GridOptions} from 'ag-grid';
+import {SelectItem} from 'primeng/primeng';
+import {PnlHttpService} from "../services/pnl-http.services";
+import {IntradayPnLWebRequest} from "../model/intradaypnl-request";
+import {AgGridUtil} from "../gridutils/ag-grid.utils";
+import { NotificationType, EXPORT_ERROR_MESSAGE, EXPORT_CONFIG } from '../alert/alert-constants';
+import { AlertComponent } from '../alert/alert.component';
+import { CONTRIBS, CONTRIBUTION_HEADERS, DATE_FORMAT, SUBTITLE, EXCEL_FILE_NAME, PDF_FILE_NAME, EXCEL_ERROR, PDF_ERROR} from './visualization-constants';
+import * as Highcharts from 'highcharts/highstock';
+import { CacheFactory } from '../utils/cache-factory';
+import { TableData } from '../shared/grid/model/table-data.model';
+import { CommonUtils } from '../utils/common.utils';
+import { SharedUtils } from '../utils/shared.utils';
+import {Logger, LoggerFactory} from '@blk/weblox-common';
+import { LOCALE } from '../app.constants';
+import { GoldenLayoutConfig, VisualizationState, PnLComponent } from '../utils/component.model';
+import { COMPONENT_TYPE } from '../golden-layout/constants/golden-layout.constants';
+import { Chart, Series,ExportingOptions } from 'highcharts';
+import * as _ from 'lodash';
+import * as Excel from 'exceljs/dist/exceljs.min.js';
+import * as fs from 'file-saver';
+import { DatePipe } from '@angular/common';
+@Component({
+	selector: 'visualization',
+	templateUrl: 'visualization.html',
+	styleUrls: ['visualizationStyle.css'],
+	providers: [PnlHttpService]
+})
+
+
+export class VisualizationComponent implements OnInit, AfterViewInit, OnDestroy, PnLComponent {
+
+  private logger: Logger = LoggerFactory.getLogger(VisualizationComponent);
+
+  columnDropdownValue: any;
+	xAxisValue: any;
+	public xAxisDropdownItems : SelectItem[] = [];
+  public columnItems : SelectItem[] = [];
+  portfolioAggReq: IntradayPnLWebRequest;
+
+	topFilterValue: boolean = true;
+	bottomFilterValue: boolean = true;
+	topSpinnerValue: number = 8;
+	bottomSpinnerValue: number = 8;
+	chartId:string = CacheFactory.BARCHART;
+
+	public gridOptionsData: any[];
+
+  options: any;
+    chart : Chart;
+	chartSeriesData: any;
+    chartCategories : any;
+    exportingOptions: ExportingOptions;
+	//seriesName: string = '';
+	pnlService: PnlHttpService;
+  request: IntradayPnLWebRequest;
+	public tableData : TableData;
+	public static self: VisualizationComponent;
+  public reportingColumns: any[] = [];
+
+  Highcharts = Highcharts;
+
+	@Input() _container:any  ;
+	@Input() _state: VisualizationState  ;
+
+	constructor(pnlService: PnlHttpService) {
+    this.pnlService = pnlService;
+    this.populateYAxisDropdownItems();
+		this.columnDropdownValue = {id:"ActivePricePnLContrib", name:"Px Act. CTR"};
+		this.populateXAxisDropdownItems();
+		this.xAxisValue = {id:"Ticker", name:"Ticker"};
+
+		//this.seriesName = this.columnDropdownValue.name;
+		this.columnItems.forEach(selectedItem=>{
+			this.reportingColumns.push({'field': selectedItem.value.id});
+		});
+    this.xAxisDropdownItems.forEach(selectedItem => {
+      this.reportingColumns.push({'field': selectedItem.value.id});
+    })
+    this.prepareChartOptions();
+  }
+
+	private populateYAxisDropdownItems() {
+		this.columnItems.push({label: "P&L % Contrib. (Pf)", value: {id: "PnLContrib", name: "P&L % Contrib"}});
+		this.columnItems.push({
+			label: "Price P&L % Contrib. (Pf)",
+			value: {id: "PricePnLContrib", name: "Price P&L % Contrib"}
+		});
+		//this.columnItems.push({label : "FX P&L % Contrib" , value :{id:"FxPnLContrib", name:"FX P&L Contrib"}});
+		this.columnItems.push({label: "P&L % Contrib. (Active)", value: {id: "ActiveContrib", name: "Act. CTR"}});
+		this.columnItems.push({
+			label: "Price % Contrib. (Active)",
+			value: {id: "ActivePricePnLContrib", name: "Px Act. CTR"}
+		});
+		//this.columnItems.push({label : "FX Act. CTR" , value :{id:"ActiveFxPnLContrib", name:"FX Act. CTR"}});
+	}
+
+	private populateXAxisDropdownItems():void {
+		this.xAxisDropdownItems.push({label : "Ticker" , value :{id:"Ticker", name:"Ticker"}});
+		this.xAxisDropdownItems.push({label : "Issuer" , value :{id:"IssuerName", name:"IssuerName"}});
+		this.xAxisDropdownItems.push({label : "Asset Desc." , value :{id:"SecDesc", name:"SecDesc"}});
+	}
+
+	ngOnInit() {
+    const id = SharedUtils.getAndIncrementComponentCount(this._state.comp_id);
+    this._state.comp_id = id;
+    this._state.compType = COMPONENT_TYPE.BAR;
+    this.chartId = this.chartId+id;
+    this._container.extendState({ ...this._state });
+		this.logger.info(`Bar chart component ${this._state.comp_id} initialised`);
+  }
+
+  ngOnDestroy(): void {
+    CacheFactory.removeCompFromCache(this._state.compType, this._state.workpad, undefined, this.chartId);
+  }
+
+	ngAfterViewInit() {
+
+		var map:any = CacheFactory.barChartValues.get(this._state.workpad);
+		if(map != null && map != undefined) {
+			map = map[this.chartId];
+			if(map && Object.keys(map).length > 0){
+				this.topFilterValue = map.topFilterValue;
+				this.bottomFilterValue = map.bottomFilterValue;
+				this.topSpinnerValue = map.topSpinnerValue;
+				this.bottomSpinnerValue = map.bottomSpinnerValue;
+				var column = map.columnDropdownValue.split('|');
+				this.columnDropdownValue.id = column[0];
+				this.columnDropdownValue.name = column[1];
+				if (map.xAxisDropdownValue) {
+					var xAxis = map.xAxisDropdownValue.split('|');
+					this.xAxisValue= {'id': xAxis[0], 'name': xAxis[1]};
+				}
+			}
+		}
+		this.onXAxisChanged();
+		if(this._state.title)
+            this._container.setTitle(this._state.title);
+  }
+
+	public retrieveAndPopulateData():void {
+		this.preparePnlRequest(this._state._request);
+		this.setTableData(this._state._request);
+		CacheFactory.cacheComp(this,CacheFactory.BARCHART, this._state.workpad) ;
+		this.pnlService.getPnlData(this.request, CacheFactory.isDesktopRequest).subscribe(
+				pnlData => this.processResponse(pnlData),
+				error => {
+					document.getElementById('barChartLoadingSpinner' + this._state.comp_id).style.display = 'none';
+				}
+		);
+	}
+
+	public recreateChartData(pfSelected: any){
+		this.startLoadingSpinner();
+		//CacheFactory.removeCompFromCache(CacheFactory.BARCHART,this._state.workpad,null,this._state._request);
+		this._state._request = pfSelected;
+		this.preparePnlRequest(pfSelected);
+		this.pnlService.getPnlData(this.request, CacheFactory.isDesktopRequest).subscribe(
+				pnlData => this.processServerResponse(pnlData,pfSelected)
+		);
+	}
+
+	public clearChartData(pfSelected: any){
+		this._state._request = pfSelected;
+		this.setTableData(this._state._request);
+		this.preparePnlRequest(pfSelected);
+		var rowData :any[] = [];
+		this.gridOptionsData = rowData;
+		this.createChartData(this.columnDropdownValue.id);
+		this.updateChart([],[]);
+		this._container.extendState({_request: pfSelected});
+		this._container.setTitle('Top & Bottom Performers - ' + this._state._request);
+	}
+
+	processResponse(pnlData: any) {
+		var rowData :any[] = [];
+		AgGridUtil.getGridRows(pnlData, rowData,"", false,this.reportingColumns, this._state.compType);
+    this.gridOptionsData = rowData;
+
+    this.createChartData(this.columnDropdownValue.id);
+		this.sortSeriesData();
+
+		if ((this.chartSeriesData.length > 0 && this.chart) || this._state._request == "") {
+			document.getElementById('barChartLoadingSpinner'+this._state.comp_id).style.display = 'none';
+			this.onCategoryChanged();
+		}
+
+		this._setSize();
+		if(this._state.title)
+			this._container.setTitle(this._state.title);
+		else
+			this._container.setTitle('Top & Bottom Performers - ' + this._state._request);
+		this.stopLoadingSpinner();
+	}
+
+	public setTableData(pfSelected: string){
+            this.tableData = {
+                id: pfSelected,
+                options : <GridOptions>{},
+                /*aggregationParamaters : "",
+                aggregationParamatersFields : "",*/
+                selectedAggParams : [this.xAxisValue.id]/*["Ticker"]*/,
+				//customAggParams : [],
+               /* aggParamsId : [],*/
+                selectedCurrency : "" ,
+                selectedPortfolio: pfSelected,
+                selectedViewAs : "",
+                previousSelectedViewAs : "",
+                showWidgetSettings : false,
+                disableMultiFundView : false,
+                includeCash: true,
+                includeFX: true,
+                includeBench: true,
+                aggregateBench: false,
+                reportingParams:[],
+                selectedColumnsMap: new Map<string,string>(),
+                filterStalePrice: false,
+                isFxUnsplit: false,
+                useVendorAdjustedPrice: false,
+                shouldConnectToPraada: false
+            };
+        }
+
+
+	processServerResponse(pnlData: any, pfSelected: string) {
+		if (this.tableData) {
+			this.tableData.id = pfSelected;
+		} else {
+			this.setTableData(pfSelected);
+		}
+		CacheFactory.cacheComp(this,CacheFactory.BARCHART, this._state.workpad);
+		if(this._state.title)
+			this._container.setTitle(this._state.title);
+		else
+			this._container.setTitle('Top & Bottom Performers - ' + this._state._request);
+		this.processIntradayResponse(pnlData, pfSelected);
+		this._container.extendState({_request: pfSelected});
+		this.stopLoadingSpinner();
+	}
+
+	processIntradayResponse(pnlData: any, pfSelected: string) {
+		var rowData :any[] = [];
+		AgGridUtil.getGridRows(pnlData, rowData,"",true ,this.reportingColumns, this._state.compType);
+    this.gridOptionsData = rowData;
+		this.createChartData(this.columnDropdownValue.id);
+		this.sortSeriesData();
+		if(pfSelected!="")
+			this.filterEvent();
+		else
+      this.updateChart([],[]);
+		// if(this._state.title)
+		// 	this._container.setTitle(this._state.title);
+		// else
+		// 	this._container.setTitle('Top & Bottom Performers - ' + pfSelected);
+	}
+
+	public createChartData(category : string) {
+		let seriesData : number[] = [];
+    let categories : string[] = [];
+    var dataLength:number = 0;
+		var categoryLength: number = 0;
+		var sortedData = this.gridOptionsData;
+		var xAxisValue = this.xAxisValue.id;
+		sortedData.forEach(value => {
+			categories[categoryLength++] = value[xAxisValue];
+			seriesData[dataLength++] = value[category];
+    });
+
+    this.chartCategories = [];
+		this.chartSeriesData = [];
+
+		for(var i=0;i<dataLength;i++) {
+			this.chartSeriesData[i] = seriesData[i];
+		}
+
+		for(var i=0;i<categoryLength;i++) {
+			this.chartCategories[i] = categories[i];
+		}
+	}
+
+	saveChart(chart) {
+		this.chart = chart;
+		this.chart.addSeries({
+			id: '0',
+			colorByPoint : true,
+			name : this.columnDropdownValue.name,
+        data: this.chartSeriesData || [],
+        type: 'bar'
+    });
+    var barChartSpinner: any = document.getElementById('barChartLoadingSpinner'+this._state.comp_id);
+    if(barChartSpinner)
+      barChartSpinner.style.display = 'block';
+		this._bindContainerEvents();
+	}
+	onCategoryChanged() {
+		let category:string = String(this.columnDropdownValue.id);
+		let keyToUse:Object = category;
+		let seriesData:number[] = [];
+		let categories:string[] = [];
+		var dataLength:number = 0;
+		var categoryLength:number = 0;
+		var sortedData:any[] = this.gridOptionsData;
+		var xAxisValue = this.xAxisValue.id;
+		sortedData.forEach(value => {
+			categories[categoryLength++] = value[xAxisValue/*'Ticker'*/];
+			seriesData[dataLength++] = value[category];
+		});
+
+		this.chartCategories = [];
+		this.chartSeriesData = [];
+
+		for (var i = 0; i < dataLength; i++) {
+			this.chartSeriesData[i] = seriesData[i];
+		}
+
+
+
+
+		for (var i = 0; i < categoryLength; i++) {
+			this.chartCategories[i] = categories[i];
+		}
+
+		this.chart.series[0].name = this.columnDropdownValue.name;
+
+    this.sortSeriesData();
+
+    this.chart.setTitle({
+      text: this.columnDropdownValue.name
+     }, {}, false);
+    this.filterEvent();
+	}
+	onXAxisChanged() {
+		var reportingColumnsContainsCurrentXAxisValue: boolean = false;
+		this.reportingColumns.forEach(column => {
+			if (column.field == this.xAxisValue.id) {
+				reportingColumnsContainsCurrentXAxisValue = true;
+			}
+		});
+		if (!reportingColumnsContainsCurrentXAxisValue) {
+			this.reportingColumns.push({'field': this.xAxisValue.id});
+		}
+		this.retrieveAndPopulateData();
+  }
+
+  public exportButtonClick(option: any){
+    if(option === 'excel'){
+      this.getDataForExcel();
+    }
+    else {
+      this.getDataForPdf();
+    }
+  }
+
+  public getDataForExcel(){
+    this.pnlService.getPnlData(this.portfolioAggReq, CacheFactory.isDesktopRequest).subscribe(
+      pnlData => {
+          try {
+              let rowData: any[] = [];
+              AgGridUtil.getGridRows(pnlData, rowData,"", true,this.reportingColumns, this._state.compType);
+              this.exportToExcel(rowData);
+          }catch (error) {
+              AlertComponent.displayUserNotificationBanner(EXPORT_ERROR_MESSAGE, NotificationType.ERROR, EXPORT_CONFIG);
+              this.logger.error(EXCEL_ERROR, error);
+          }
+      }
+    );
+  }
+
+  public getDataForPdf(){
+    try{
+      this.pnlService.chartToPdf(this.chart).subscribe(
+        data => {
+          let blob = new Blob([data],{
+            type: 'application/pdf'
+          });
+          fs.saveAs(blob, PDF_FILE_NAME);
+        }
+      );
+    }catch(error){
+      AlertComponent.displayUserNotificationBanner(EXPORT_ERROR_MESSAGE, NotificationType.ERROR, EXPORT_CONFIG);
+      this.logger.error(PDF_ERROR, error);
+    }
+  }
+
+
+
+  onClickOutside(event: HTMLElement, element: HTMLElement){
+      const exportButton = this._container.tab.header.controlsContainer[0].children.exportBtn;
+      if(exportButton.contains(event)){
+          return;
+      }
+      if(!event.contains(element)){
+          element.style.display = 'none';
+      }
+  }
+
+  public exportToExcel(pfAggData: any){
+    // Create workbook and worksheet.
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('TopBottomChartData');
+    // Set the Portfolio name on top.
+    this.setPortfolioName(worksheet);
+    // Set Portfolio level aggregated contribution values.
+    this.setContribValues(worksheet, pfAggData);
+    // Set top-bottom Values
+    this.setTopBottomValuesInExcel(worksheet);
+    // Formatting for the sheet.
+    this.formatWorksheet(worksheet);
+    // Write to file and download.
+    this.downloadWorkbook(workbook);
+  }
+
+  public setPortfolioName(worksheet){
+    const pfName = this.request.port_group;
+    const pfNameRow = worksheet.addRow([pfName]);
+    pfNameRow.font = {size: 14, bold: true, color: { argb: 'ffffffff'}};
+    pfNameRow.alignment = {horizontal: 'center'};
+    pfNameRow.eachCell((cell, number) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'ff00b6d6'}
+      }
+    });
+  }
+
+  public setContribValues(worksheet, pfAggData){
+    const contributionHeadersRow = worksheet.addRow(CONTRIBUTION_HEADERS);
+    contributionHeadersRow.alignment = {horizontal: 'center'};
+    contributionHeadersRow.font = { bold: true};
+    contributionHeadersRow.eachCell((cell, number) => {
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+    });
+
+    let contributionData = CONTRIBS.map(value => _.round((pfAggData[0][value])*100,2));
+    let contributionDataRow = worksheet.addRow(contributionData);
+    contributionDataRow.alignment = {horizontal: 'center'};
+  }
+
+  public setTopBottomValuesInExcel(worksheet){
+    // Data sorted according to the dropdown value selected.
+    let dataInSorted = _.orderBy(this.gridOptionsData, this.columnDropdownValue.id,'desc');
+    let datum:any;
+    for(let loop = 0; loop<2;loop++){
+      let datum = [];
+      // Check the top and bottom spinner values and print rows accordingly.
+      let limit = loop%2 ? this.bottomSpinnerValue : this.topSpinnerValue;
+      for(let i = 0 ; i < limit ; i++){
+        datum.push([i+1, _.round(dataInSorted[i][this.columnDropdownValue.id]*100,2),dataInSorted[i]['IssuerName'],dataInSorted[i]['Ticker']]);
+      }
+      worksheet.addRow([]);
+      // Add Top / Bottom heading and set formatting.
+      this.addTopBottomHeader(worksheet, loop);
+      // Add Header Row and set formatting.
+      this.addDataHeaderAndValues(worksheet, datum);
+      // Reverse array to print bottom securities.
+      dataInSorted.reverse();
+    }
+  }
+
+  public addTopBottomHeader(worksheet, loop){
+    let topBottomRow = worksheet.addRow(loop%2 ? ['BOTTOM']:['TOP']);
+      topBottomRow.font = { bold: true};
+      topBottomRow.alignment = {horizontal: 'center'};
+      topBottomRow.eachCell((cell, number) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF00' },
+          bgColor: { argb: 'FF0000FF' }
+        }
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+      });
+  }
+
+  public addDataHeaderAndValues(worksheet, datum){
+    let dataHeaders = ['S.No', _.replace(this.columnDropdownValue.name,'%','') ,'Issuer Name','Ticker'];
+
+    let dataHeaderRow = worksheet.addRow(dataHeaders);
+      dataHeaderRow.font = { bold: true};
+      dataHeaderRow.alignment = {horizontal: 'center'};
+      dataHeaderRow.eachCell((cell, number) => {
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
+      });
+      // Add Data to Sheet.
+      worksheet.addRows(datum);
+  }
+
+  public downloadWorkbook(workbook){
+    workbook.xlsx.writeBuffer().then((datum) => {
+      let blob = new Blob([datum], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      fs.saveAs(blob, EXCEL_FILE_NAME);
+    });
+  }
+
+  formatWorksheet(worksheet){
+    worksheet.mergeCells('A1:D1');
+    worksheet.mergeCells('A5:D5');
+    worksheet.mergeCells(`A${8+this.topSpinnerValue}:D${8+this.topSpinnerValue}`);
+
+    // Set columns width.
+    worksheet.getColumn(1).width = 15;
+    worksheet.getColumn(2).width = 25;
+    worksheet.getColumn(3).width = 50;
+    worksheet.getColumn(4).width = 30;
+
+    worksheet.addRow([]);
+
+    // Add subtitle row.
+    this.addSubtitle(worksheet);
+  }
+
+  public addSubtitle(worksheet){
+    let datePipe = new DatePipe('en-US');
+    let subTitleRow = worksheet.addRow([SUBTITLE + datePipe.transform(new Date(), DATE_FORMAT)]);
+    subTitleRow.font = {bold: true};
+  }
+
+	filterEvent(){
+		let chartCat : string[]= [];
+		let chartData : number[] = [];
+		if(this.topFilterValue){
+			this.topFilterEvent(chartCat,chartData);
+		}
+		if(this.bottomFilterValue){
+			this.bottomFilterEvent(chartCat,chartData);
+		}
+		if(!this.topFilterValue && !this.bottomFilterValue){
+			this.updateChart(this.chartCategories, this.chartSeriesData);
+		}else{
+			this.updateChart(chartCat,chartData);
+		}
+	}
+	updateChart(chartCat : string[],chartData : number[]){
+		(this.chart.get('0') as Series).setData([]);
+		(this.chart.get('0') as Series).setData(chartData);
+    this.chart.xAxis[0].setCategories(chartCat);
+  }
+
+	topFilterEvent(chartCat : string[],data : number[]) {
+		for(var i=0; i< this.topSpinnerValue; i++) {
+			data[i] = this.chartSeriesData[i];
+			chartCat[i] = this.chartCategories[i];
+		}
+	}
+	bottomFilterEvent(chartCat : string[],data : number[]) {
+		let bottomValue: number = this.bottomSpinnerValue;
+		var num: number = this.chartSeriesData.length - bottomValue;
+		var dataLength: number=data.length;
+		for(var i=dataLength; i< (this.bottomSpinnerValue + dataLength); i++) {
+			if(num >= dataLength) {
+				data[i] = this.chartSeriesData[num];
+				chartCat[i] = this.chartCategories[num];
+				num++;
+			} else {
+				data[i] = this.chartSeriesData[i];
+				chartCat[i] = this.chartCategories[i];
+			}
+		}
+	}
+	sortSeriesData() {
+		let seriesData = this.chartSeriesData;
+		let chartCategories = this.chartCategories;
+
+		for(var i = 0; i< seriesData.length; i++) {
+			for(var j = 0; j<seriesData.length-1;j++) {
+				if(seriesData[j] < seriesData[j+1]) {
+					let temp : number = seriesData[j];
+					seriesData[j] = seriesData[j+1];
+					seriesData[j+1] = temp;
+
+					let tempCategory : string = chartCategories[j];
+					chartCategories[j] = chartCategories[j+1];
+					chartCategories[j+1] = tempCategory;
+				}
+			}
+		}
+
+	}
+	sortFunction(a, b) {
+		if(a[0] === b[0]) {
+			return 0;
+		} else {
+			return (a[0] < b[0]) ? -1 : 1;
+		}
+	}
+
+	_bindContainerEvents = function() {
+		this._container.on( 'resize', this._setSize.bind( this ) );
+		this._container.on( 'destroy', this.removeComponent.bind(this) );
+	}
+
+	removeComponent = function() {
+    CacheFactory.removeCompFromCache(CacheFactory.BARCHART, this._state.workpad,null,this.chartId) ;
+    this.pnlService.removeComponentCachedData(CacheFactory.clientId, this._state.pf, CacheFactory.BARCHART, this._state.comp_id).subscribe();
+	}
+	_setSize = function() {
+		var displayUserPanel = document.getElementById("userInputPanel"+this._state.comp_id).style.display;
+		if(displayUserPanel == "inline-block"){
+			this.chart.setSize( this._container.width, this._container.height-30, false);
+		} else {
+			this.chart.setSize( this._container.width, this._container.height, false);
+		}
+		this._container.parent.select();
+		if(document.getElementById('spinLoader')!=null && document.getElementById('spinLoader').style.display=='inline' ){
+			this.stopLoadingSpinner();
+			this.startLoadingSpinner();
+		}
+	}
+	private preparePnlRequest(pfSelected: string):void {
+
+		var reportingParams = [];
+		this.reportingColumns.forEach(column => {
+      reportingParams.push(column.field);
+    });
+    reportingParams.push('BenchContrib');
+    reportingParams.push('RelativeActiveContrib')
+		// reportingParams.push(this.xAxisValue.id);
+		var includeCash = false;
+		var includeFX = false;
+    var includeBench = false;
+    //As per PCM-18664,bench only securities should not be aggregated for top-bottom chart.
+    var aggregateBench = false;
+    let filterStalePrice = true;
+    let isFxUnsplit = false;
+    let useVendorAdjustedPrice = false;
+    let shouldConnectToPraada = false;
+		var folderSettingsMap: Map<any, any> = CacheFactory.foldersToSettingsMap.get(this._state.workpad);
+		if (folderSettingsMap && folderSettingsMap.size > 0) {
+      includeCash = folderSettingsMap.get('includeCash');
+			includeFX = folderSettingsMap.get('includeFX');
+			includeBench = folderSettingsMap.get('includeBench');
+      filterStalePrice = folderSettingsMap.get('filterStalePrice');
+      isFxUnsplit = folderSettingsMap.get('isFxUnsplit');
+      useVendorAdjustedPrice = folderSettingsMap.get('useVendorAdjustedPrice');
+      shouldConnectToPraada = folderSettingsMap.get('shouldConnectToPraada');
+		}
+		var aggParams: string[] = [];
+    aggParams.push(this.xAxisValue.id);
+
+    this.request = {
+			port_group: pfSelected,
+			pos_date :  new Date().toLocaleDateString(LOCALE),
+			bench_order : 1,
+			bench_type : 'RISK',
+			gr_sectors : SharedUtils.getSectorBreakdownFromPortfolioSummary( this._state.workpad),
+			holiday_calendar : 'EMPTY',
+			custom : false,
+			custom_start_date : null,
+			custom_end_date : null,
+			update_cache : false,
+			req_no : `${CacheFactory.clientId}_${new Date().getTime().toString()}`,
+			connect_anser : false,
+			user : CacheFactory.userId,
+			agg_params : aggParams,
+			add_leaves : false,
+			agg_params_val : [],
+			currency: "",
+			clientId: CacheFactory.clientId,
+			clientWorkpadId: this._state.workpad,
+			barchartUpdate :true,
+			reporting_parameters: reportingParams,
+			include_cash: includeCash,
+			include_fx: includeFX,
+			include_bench: includeBench,
+			aggregate_bench_pos: aggregateBench,
+			sources: CacheFactory.selectedSources,
+			isPreview: false,
+			host_ip: window["userIPAddr"],
+			host_name: window["userIPAddr"],
+      time_stamp:new Date().getTime().toString(),
+      timezone_offset: new Date().getTimezoneOffset(),
+      filter_stale_price: filterStalePrice,
+      comp_id: this._state.comp_id,
+      isFxUnsplit: isFxUnsplit,
+      useVendorAdjustedPrice: useVendorAdjustedPrice
+    };
+
+    this.portfolioAggReq = {
+      ...this.request,
+      port_group: pfSelected,
+			agg_params : ['PortfolioJacket','Portfolio'],
+      isPreview: true,
+      useVendorAdjustedPrice: useVendorAdjustedPrice,
+      shouldConnectToPraada: shouldConnectToPraada
+		};
+	}
+
+	public convertBarChartMapToJSONObject() {
+        var objMap = new Map<string, any>();
+        objMap.set("topSpinnerValue",this.topSpinnerValue);
+        objMap.set("bottomSpinnerValue",this.bottomSpinnerValue);
+        objMap.set("topFilterValue",this.topFilterValue);
+        objMap.set("bottomFilterValue",this.bottomFilterValue);
+        objMap.set("columnDropdownValue",this.columnDropdownValue.id+"|"+this.columnDropdownValue.name);
+		objMap.set("xAxisDropdownValue",this.xAxisValue.id+"|"+this.xAxisValue.name);
+		objMap.set("portfolio",this._state._request);
+		objMap.set("compId",CacheFactory.BARCHART+this._state.comp_id);
+        var obj = new Map< string, any>();
+        obj.set(this._state.workpad,objMap);
+        return CommonUtils.convertMapToJSONObject(objMap);
+    }
+
+	public startLoadingSpinner(){
+		document.getElementById('barChartLoadingSpinner'+this._state.comp_id).style.display = 'block';
+	}
+
+	private stopLoadingSpinner(){
+		document.getElementById('barChartLoadingSpinner'+this._state.comp_id).style.display = 'none';
+	}
+
+	public prepareChartOptions() {
+
+		this.options = {
+			colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee",
+				"#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+			chart : {
+				animation: false,
+				backgroundColor: {
+					linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },
+					stops: [
+						[0, '#2a2a2b'],
+						[1, '#3e3e40']
+					]
+				},
+				style: {
+					fontFamily: "'Unica One', sans-serif"
+				},
+				plotBorderColor: '#606063',
+				type:'column'
+      },
+			title : {
+				text :   this.columnDropdownValue.name,
+				style: {
+					color: '#A0A0A3',
+					fontSize: '12px',
+					fontWeight: 'bold'
+				}
+			},
+			credits :{ enabled: false},
+			xAxis : {
+				categories : this.chartCategories || [],
+				gridLineColor: '#707073',
+				labels: {
+					style: {
+						color: '#E0E0E3'
+					}
+				},
+				lineColor: '#707073',
+				minorGridLineColor: '#505053',
+				tickColor: '#707073',
+				title: {
+					style: {
+						color: '#A0A0A3'
+					},
+					text: ''
+				}
+			},
+			yAxis: {
+				gridLineColor: '#707073',
+				labels: {
+					style: {
+						color: '#E0E0E3'
+					}
+				},
+				lineColor: '#707073',
+				minorGridLineColor: '#505053',
+				tickColor: '#707073',
+				tickWidth: 1,
+				title: {
+					style: {
+						color: '#A0A0A3'
+					}
+				}
+			},
+			tooltip: {
+				backgroundColor: 'rgba(0, 0, 0, 0.85)',
+				style: {
+					color: '#F0F0F0'
+				},
+				valueDecimals: 2
+			},
+			plotOptions: {
+				series: {
+					dataLabels: {
+						color: '#B0B0B3',
+						enabled: true,
+						format: '{point.y:.2f}%',
+						crop: false,
+            overflow: 'none'
+					},
+					marker: {
+						lineColor: '#333'
+					},
+				}
+			},
+			legend: {
+				enabled: false,
+				itemStyle: {
+					color: '#E0E0E3'
+				},
+				itemHoverStyle: {
+					color: '#FFF'
+				},
+				itemHiddenStyle: {
+					color: '#606063'
+				}
+			},
+			labels: {
+				style: {
+					color: '#707073'
+				}
+			},
+			navigation: {
+				buttonOptions: {
+					symbolStroke: '#DDDDDD',
+					theme: {
+						fill: '#505053'
+					}
+				}
+			},
+			scrollbar: {
+				barBackgroundColor: '#808083',
+				barBorderColor: '#808083',
+				buttonArrowColor: '#CCC',
+				buttonBackgroundColor: '#606063',
+				buttonBorderColor: '#606063',
+				rifleColor: '#FFF',
+				trackBackgroundColor: '#404043',
+				trackBorderColor: '#404043'
+      },
+			// special colors for some of the
+			legendBackgroundColor: 'rgba(0, 0, 0, 0.5)',
+			background2: '#505053',
+			dataLabelsColor: '#B0B0B3',
+			textColor: '#C0C0C0',
+      maskColor: 'rgba(255,255,255,0.3)'
+		};
+	}
+
+
+  static addBarChart(portfolio: any, currentWorkpad: string = "") {
+    var workpadName: any = currentWorkpad;
+    CacheFactory.foldersToPfMap.forEach(function (item, key, object) {
+      if (item.has(portfolio)) {
+        workpadName = key;
+      }
+    });
+
+    const linkedUnlinked = CacheFactory.linkedUnlinkedComponentsWorkpadMap.get(workpadName);
+    if(!CacheFactory.isComponentAdded(CacheFactory.BARCHART,portfolio,workpadName,false)){
+            let comp = CacheFactory.getCompFromCache(CacheFactory.BARCHART,workpadName)
+    if (comp && comp.size > 0 && linkedUnlinked) {
+        var pfsWithTopBottom = CacheFactory.barChartMap.get(workpadName);
+        pfsWithTopBottom.forEach(pf => {
+            pf.recreateChartData(portfolio);
+        });
+    } else {
+         VisualizationComponent.addNewBarChart(workpadName, portfolio);
+    }
+    }
+  }
+
+  public static addNewBarChart(workpadName: string, portfolio: any) {
+    var newBarChartConfig: GoldenLayoutConfig = {
+      type: 'component',
+      componentName: CacheFactory.BARCHART,
+      componentState: {
+        comp_id: '-1',
+        _request:/* PnLVariables.SummaryTableMap.get(portfolio).tableData.options*/portfolio,
+        workpad: workpadName,
+        compType: COMPONENT_TYPE.BAR
+      },
+      title: 'Top & Bottom Performers - ' + portfolio
+    }
+    SharedUtils.addNewChildComponent(workpadName, newBarChartConfig);
+
+
+  }
+}
