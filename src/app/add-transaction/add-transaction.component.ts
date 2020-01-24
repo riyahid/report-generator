@@ -22,15 +22,15 @@ export class AddTransactionComponent implements OnInit {
 
   ngOnInit() {
     this.addForm = this.fb.group({
-      invno: [0, Validators.required],
+      invno: [null, Validators.required],
       particulars: ['', Validators.required],
       hsn: [64, Validators.required],
       assets: this.fb.array([this.createAsset()]),
-      cgst: 0,
-      sgst: 0,
-      igst: 0,
-      grandTotal: 0,
-      amount: 0,
+      cgst: null,
+      sgst: null,
+      igst: null,
+      grandTotal: null,
+      amount: null,
       date: new Date(),
       isIgst: false,
       type: Boolean(this.data) ? 'Sale' : 'Purchase'
@@ -48,28 +48,28 @@ export class AddTransactionComponent implements OnInit {
 
   updateTotals(assets: number[] = []) {
     const total: number = _.sum(assets);
-    const tax: number = this.getPrecisionedNumber(total * 0.05);
+    const tax: number = this.fix(total * 0.05);
     this.addForm.get('amount').setValue(total);
     this.addForm.get('grandTotal').setValue(total + tax);
     if (this.addForm.get('isIgst').value === true) {
       this.addForm.get('igst').setValue(tax);
-      this.addForm.get('cgst').setValue(0);
-      this.addForm.get('sgst').setValue(0);
+      this.addForm.get('cgst').setValue(null);
+      this.addForm.get('sgst').setValue(null);
     } else {
       this.addForm.get('cgst').setValue(tax / 2);
       this.addForm.get('sgst').setValue(tax / 2);
-      this.addForm.get('igst').setValue(0);
+      this.addForm.get('igst').setValue(null);
     }
   }
 
-  getPrecisionedNumber(value: number): number {
-    return Number(value.toPrecision(3));
+  fix(value: number): number {
+    return Number(value.toPrecision(5));
   }
 
   createAsset(): any {
     return this.fb.group({
-      pairs: 0,
-      rate: 0
+      pairs: null,
+      rate: null
     });
   }
 

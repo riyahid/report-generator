@@ -8,6 +8,7 @@ import { AddTransactionComponent } from '../add-transaction/add-transaction.comp
 import { allYears, line3, month, rowKeys } from '../model/header';
 import { Transaction } from '../model/transaction.model';
 import { TransactionService } from '../services/transaction.service';
+import { ExcelService } from '../services/excel.service';
 
 @Component({
   selector: 'app-transactions-list',
@@ -21,8 +22,6 @@ export class TransactionsListComponent implements OnInit {
 
   @Input() sale: any;
   cols: any[];
-  span = 'jj';
-
   line1 = 'UMA SHOE FACTORY';
   line2 = 'B-24, ALOK NAGAR, JAIPUR HOUSE, AGRA';
   line3 = ' statement for the month ';
@@ -35,19 +34,12 @@ export class TransactionsListComponent implements OnInit {
     private transactionService: TransactionService,
     private dialog: MatDialog,
     private cd: ChangeDetectorRef,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private excel: ExcelService
   ) {}
 
   transactions: Transaction[] = [];
   filtered: Transaction[] = [];
-  dataSource = new MatTableDataSource<Transaction>([]);
-
-  displayedColumns: string[] = ['id', 'type', 'assets'];
-
-  /** Gets the total cost of all transactions. */
-  getTotalCost() {
-    return this.transactions.map(t => t.amount).reduce((acc, value) => acc + value, 0);
-  }
 
   ngOnInit() {
     this.sale = this.sale === 'true' ? true : false;
@@ -77,6 +69,10 @@ export class TransactionsListComponent implements OnInit {
     this.filterTransactions({month: this.selMonth, year: this.selYear})
   }
 
+  removeAsset(id: string) {
+    this.transactionService.deleteTransactions(id);
+  }
+
   filterTransactions(value: any) {
     const mont = _.map(this.months, 'label')[Number(value.month) - 1];
     this.line3 = `${line3} ${mont} ${value.year}`;
@@ -86,13 +82,9 @@ export class TransactionsListComponent implements OnInit {
     });
   }
 
-  exportTable() {
-    this.transactionService.exportToExcel('funds');
-  }
-
   addTransaction() {
     this.dialog
-      .open(AddTransactionComponent, { data: this.sale })
+      .open(AddTransactionComponent, { data: this.sale, width: '550px'})
       .afterClosed()
       .subscribe(data => {
         if (data) {
@@ -106,7 +98,7 @@ export class TransactionsListComponent implements OnInit {
   }
 
   exportExcel() {
-    this.transactionService.exportToExcel('funds');
+    this.excel.exportToExcel(this.filtered, this.sale?'Sales':'Purchases');
   }
   exportPdf() {
     const data = document.getElementById('funds');

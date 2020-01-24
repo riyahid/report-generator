@@ -32,3 +32,5 @@ export const rowKeys: any[] = [
   { field: 'igst', header: 'IGST', footer: 'sum' },
   { field: 'grandTotal', header: 'Grand Total', footer: 'sum' }
 ];
+
+export const colWidths = [6, 11, 4, 25, 8, 8, 8, 8, 8, 8, 10];

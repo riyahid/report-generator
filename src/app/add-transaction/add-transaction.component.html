@@ -1,6 +1,6 @@
 <div>
   <form [formGroup]="addForm" class="formClass">
-    <mat-form-field>
+    <mat-form-field style="width: 80px;">
       <input matInput type="number" placeholder="Invoive No." formControlName="invno" />
     </mat-form-field>
     <mat-form-field>
@@ -8,10 +8,10 @@
       <mat-datepicker-toggle matSuffix [for]="picker1"></mat-datepicker-toggle>
       <mat-datepicker #picker1></mat-datepicker>
     </mat-form-field>
-    <mat-form-field>
-      <input matInput type="number" placeholder="HSN" formControlName="hsn" />
+    <mat-form-field style="width: 50px;"> 
+      <input matInput type="number" placeholder="HSN" formControlName="hsn"/>
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field style="width: 400px;">
       <input matInput placeholder="Particulars" formControlName="particulars" />
     </mat-form-field>
     <div>
@@ -21,10 +21,10 @@
     </div>
     <div formArrayName="assets" *ngFor="let item of addForm.get('assets')['controls']; let i = index">
       <div [formGroupName]="i">
-        <mat-form-field>
+        <mat-form-field style="width: 100px;">
           <input matInput type="number" placeholder="Pairs" formControlName="pairs" />
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field style="width: 100px;"> 
           <input matInput type="number" placeholder="Rate" formControlName="rate" />
         </mat-form-field>
         <button *ngIf="i === 0" (click)="addAsset()" mat-icon-button color="primary">
