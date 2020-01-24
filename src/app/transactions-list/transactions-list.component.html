@@ -54,6 +54,11 @@
     <td class="columns"[attr.rowspan]="rowData.assets.length">{{ rowData.sgst }}</td>
     <td class="columns"[attr.rowspan]="rowData.assets.length">{{ rowData.igst }}</td>
     <td class="columns"[attr.rowspan]="rowData.assets.length">{{ rowData.grandTotal }}</td>
+    <td class="columns"[attr.rowspan]="rowData.assets.length">
+      <button (click)="removeAsset(i)" mat-icon-button color="warn">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
   </ng-template>
   <ng-template #spanrow let-rowData="rowData" let-columns="columns" let-asset="asset" let-item>
     <td class="columns">{{ asset.pairs }}</td>

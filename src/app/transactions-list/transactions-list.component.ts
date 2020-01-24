@@ -5,7 +5,7 @@ import html2canvas from 'html2canvas';
 import * as jspdf from 'jspdf';
 import * as _ from 'lodash';
 import { AddTransactionComponent } from '../add-transaction/add-transaction.component';
-import { allYears, line3, month } from '../model/header';
+import { allYears, line3, month, rowKeys } from '../model/header';
 import { Transaction } from '../model/transaction.model';
 import { TransactionService } from '../services/transaction.service';
 
@@ -15,6 +15,8 @@ import { TransactionService } from '../services/transaction.service';
   styleUrls: ['./transactions-list.component.css']
 })
 export class TransactionsListComponent implements OnInit {
+
+
   @ViewChild('funds', { static: true }) table: ElementRef;
 
   @Input() sale: any;
@@ -68,19 +70,7 @@ export class TransactionsListComponent implements OnInit {
     items.forEach((item: any) => (item.rowspan = 2));
     this.cd.detectChanges();
 
-    this.cols = [
-      { field: 'invno', header: 'Inv No.', footer: 'Total' },
-      { field: 'date', header: 'Date' },
-      { field: 'hsn', header: 'HSN' },
-      { field: 'particulars', header: 'Particulars' },
-      { field: 'pairs', header: 'Pairs' },
-      { field: 'rate', header: 'Rate' },
-      { field: 'amount', header: 'Amount', footer: 'sum' },
-      { field: 'cgst', header: 'CGST', footer: 'sum' },
-      { field: 'sgst', header: 'SGST', footer: 'sum' },
-      { field: 'igst', header: 'IGST', footer: 'sum' },
-      { field: 'grandTotal', header: 'Grand Total', footer: 'sum' }
-    ];
+    this.cols = rowKeys;
   }
 
   onChange(event) {
